@@ -1,0 +1,761 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Ragnarok Drop Simulator - Prototype</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      body { font-family: Arial, sans-serif; background:#f3f4f6; color:#111827; padding:20px; }
+      .card { background:#fff; padding:16px; border-radius:8px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); margin-bottom:12px; }
+      label { display:block; margin-bottom:8px; }
+      input, select { padding:8px; width:100%; box-sizing:border-box; margin-top:4px; }
+      button { padding:10px 14px; margin-right:8px; border:none; border-radius:6px; cursor:pointer; }
+      .btn-primary { background:#2563eb; color:#fff; }
+      .btn-success { background:#16a34a; color:#fff; }
+      .row { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+      pre { background:#111827; color:#fff; padding:12px; border-radius:6px; overflow:auto; }
+      .consumables-section { margin-bottom: 12px; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h2>Ragnarok Drop Simulator — Protótipo</h2>
+      <p>Front-end mínimo usando React (CDN). Configure os modificadores conforme seu personagem e pressione <strong>Calcular</strong> ou <strong>Simular</strong>.</p>
+    </div>
+
+    <div class="card">
+      <div id="root"></div>
+    </div>
+
+    <!-- React + Babel via CDN for quick prototype -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel">
+      const { useState, useEffect } = React;
+      const API_BASE = 'https://seu-projeto-backend.onrender.com';
+
+      function App() {
+        const [itemId, setItemId] = useState('refinadora_complexa_18_savage');
+        const [numKills, setNumKills] = useState(100);
+        const [mc, setMc] = useState(10000);
+
+        // Cascata de seletores
+        const [contents, setContents] = useState([]);
+        const [selectedContent, setSelectedContent] = useState('fenda_maior');
+        const [levels, setLevels] = useState([]);
+        const [selectedLevel, setSelectedLevel] = useState('18');
+        const [allDropsData, setAllDropsData] = useState(null); // Armazena resultado do /calculate-all
+
+        // presets / tabelas — DEFINIDAS ANTES DE USAR
+        const RATE_PRESETS = {"100":0,"50":12,"25":25,"12":37,"1":50,"1s":60,"1s260":65};
+        const VIP_PRESETS = {"none":0,"vip1":10,"vip12":20};
+        const PET_PRESETS = {"none":0,"pet22":7,"pet45":15,"pet90":30,"pet90D":42,"pet90C":54,"pet90B":78,"pet90A":126};
+        const PET_ACCESSORY_PRESETS = Array.from({length:21}, (_,i)=>i);
+        const FENDA_QUEST_PRESETS = {"0":0,"3":3,"4":4,"8":8,"12":12};
+        const BIO_REPUTATION_PRESETS = {"0":0,"1":2,"2":4,"3":6,"4":8,"5":10};
+        const CAS_REPUTATION_PRESETS = {"0":0,"1":1,"2":2};
+        const GUILD_RANKING_PRESETS = {"0":0,"1":1,"2":2,"3":3};
+        const CATEG_RANKING_PRESETS = {"0":0,"1":3};
+        const TRIAL_RANKING_PRESETS = {"0":0,"1":2};
+        const RUNAS_PRESETS = {"0":0,"1":1,"2":2,"3":3};
+        const REBORNC_PRESETS = {"0":0,"1":1};
+        const SEA_REPUTATION_PRESETS = {"0":0,"1":1,"2":2,"3":3,"4":4,"5":5};
+        const TEMP_PRESETS = {"0":0,"1":2,"2":4,"3":6,"4":8};
+
+        // mapeamentos para transformar maestrias e Reborn Kafra em percentuais (enviados em final_mods)
+        const ADV_MASTER_MAP = {
+          none: 0,
+          adv_1: 1,
+          adv_2: 3,
+          adv_3: 5,
+          adv_4: 8
+        };
+        const BIRTH_MASTER_MAP = {
+          none: 0,
+          birth_1: 1,
+          birth_2: 2,
+          birth_3: 3,
+          birth_4: 5
+        };
+        const REBORN_KAFRA_MAP = {
+          none: 0,
+          reborn_1: 1,
+          reborn_2: 2,
+          reborn_3: 3,
+          reborn_4: 5,
+          reborn_5: 8
+        };
+
+        // consumíveis iniciais (checkbox state)
+        const [consumables, setConsumables] = useState({});
+        const consumablesList = {
+          calice: "Cálice (+265%)",
+          calice2: "Cálice II (+240%)",
+          chicle: "Chicle de Bola / Manual (+200%)",
+          chiclete: "Chiclete (+100%)",
+          lata: "Lata para Gatos (+20%)",
+          revitalizadora: "Poção Revitalizadora (+20%)",
+          drop_pot: "Drop em Pote (+25%)",
+          fusion: "Fusão em Pote (+25%)",
+          doador: "Poção do Doador (+35%)",
+          doador_rmt: "Poção do Doador RMT (+35%)",
+          carnavalesco: "Elixir Carnavalesco (+2% Final)",
+          black: "Black Candy (+6% Final)",
+          champs: "Pergaminho dos Campeões (+6% Final)",
+          ativador: "Ativador Universal (+5% Final)",
+          amantes: "Carta dos Amantes (+4% Final)",
+        };
+
+        // maestrias e reborn
+        const [advMastery, setAdvMastery] = useState("none");     // aventureiro
+        const [birthMastery, setBirthMastery] = useState("none"); // aniversário
+        const [rebornMastery, setRebornMastery] = useState("none"); // Reborn Kafra
+
+        // resultados
+        const [calcResult, setCalcResult] = useState(null);
+        const [simResult, setSimResult] = useState(null);
+
+        // Carrega conteúdos ao montar o componente
+        useEffect(() => {
+          fetch(API_BASE + "/contents")
+            .then(res => res.json())
+            .then(data => {
+              setContents(data.contents || []);
+              // Carrega níveis do primeiro conteúdo
+              if (data.contents && data.contents.length > 0) {
+                loadLevels(data.contents[0].content_id);
+              }
+            })
+            .catch(err => console.error("Erro ao carregar conteúdos:", err));
+        }, []);
+
+        // Carrega níveis quando o conteúdo muda
+        const loadLevels = (contentId) => {
+          setSelectedContent(contentId);
+          fetch(API_BASE + `/contents/${contentId}/levels`)
+            .then(res => res.json())
+            .then(data => {
+              setLevels(data.levels || []);
+              // Só atualiza o nível selecionado
+              if (data.levels && data.levels.length > 0) {
+                setSelectedLevel(data.levels[0].level_id);
+              }
+            })
+            .catch(err => console.error("Erro ao carregar níveis:", err));
+        };
+
+        // Função para recalcular drops quando modificadores mudam
+         const recalculateDrops = () => {
+          if (!selectedContent || !selectedLevel) return;
+
+          const rateBonus = RATE_PRESETS[document.getElementById("ratePreset").value] || 0;
+          const vipBonus = VIP_PRESETS[document.getElementById("vipPreset").value] || 0;
+          const petBonus = PET_PRESETS[document.getElementById("petPreset").value] || 0;
+          const accBonus = Number(document.getElementById("petAccessoryPreset").value) || 0;
+          const questBonus = FENDA_QUEST_PRESETS[document.getElementById("questPreset").value] || 0;
+          const bioBonus = BIO_REPUTATION_PRESETS[document.getElementById("bioReputationPreset").value] || 0;
+          const chefBonus = BIO_REPUTATION_PRESETS[document.getElementById("cheffeniaReputationPreset").value] || 0;
+          const casBonus = CAS_REPUTATION_PRESETS[document.getElementById("casReputationPreset").value] || 0;
+          const domainBonus = Number(document.getElementById("domainCollectPreset").value) || 0;
+          const guildBonus = GUILD_RANKING_PRESETS[document.getElementById("guildRankingPreset").value] || 0;
+          const categBonus = CATEG_RANKING_PRESETS[document.getElementById("categRankingPreset").value] || 0;
+          const trialBonus = TRIAL_RANKING_PRESETS[document.getElementById("trialRankingPreset").value] || 0;
+          const runasBonus = RUNAS_PRESETS[document.getElementById("runasPreset").value] || 0;
+          const rebornCBonus = REBORNC_PRESETS[document.getElementById("rebornCPreset").value] || 0;
+          const sealedBonus = SEA_REPUTATION_PRESETS[document.getElementById("sealedReputationPreset").value] || 0;
+          const tempBonus = TEMP_PRESETS[document.getElementById("temporadaPreset").value] || 0;
+
+          const payload = {
+            content_id: selectedContent,
+            level_id: selectedLevel,
+            general_mods: {
+              server_rate: rateBonus,
+              vip_total: vipBonus,
+              pet_bonus: petBonus,
+              bio_reputation: bioBonus,
+              cheffenia_reputation: chefBonus,
+              domain_collect: domainBonus,
+              sealed_bonus: sealedBonus,
+              temp_bonus: tempBonus,
+              profs: 0
+            },
+            final_mods: {
+              pet_equip_final: accBonus,
+              quest_final: questBonus,
+              adv_mastery_percent: ADV_MASTER_MAP[advMastery] || 0,
+              birth_mastery_percent: BIRTH_MASTER_MAP[birthMastery] || 0,
+              reborn_mastery_percent: REBORN_KAFRA_MAP[rebornMastery] || 0,
+              cas_rep_final: casBonus,
+              guild_final: guildBonus,
+              categ_final: categBonus,
+              trial_final: trialBonus,
+              runas_final: runasBonus,
+              rebornC_final: rebornCBonus,
+            },
+            consumables: Object.keys(consumables).filter(k => consumables[k])
+          };
+
+          fetch(API_BASE + "/drop/calculate-all", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify(payload)
+          })
+            .then(res => res.json())
+            .then(data => setAllDropsData(data))
+            .catch(err => console.error("Erro ao calcular drops:", err));
+         };
+
+        // Recalcula quando level muda
+        useEffect(() => {
+          recalculateDrops();
+        }, [selectedLevel, selectedContent]);
+
+        function handleConsumableChange(key) {
+          setConsumables(prev => ({ ...prev, [key]: !prev[key] }));
+        }
+
+        async function handleCalc(){
+          const rateBonus = RATE_PRESETS[document.getElementById("ratePreset").value] || 0;
+          const vipBonus = VIP_PRESETS[document.getElementById("vipPreset").value] || 0;
+          const petBonus = PET_PRESETS[document.getElementById("petPreset").value] || 0;
+          const accBonus = Number(document.getElementById("petAccessoryPreset").value) || 0;
+          const questBonus = FENDA_QUEST_PRESETS[document.getElementById("questPreset").value] || 0;
+          const bioBonus = BIO_REPUTATION_PRESETS[document.getElementById("bioReputationPreset").value] || 0;
+          const chefBonus = BIO_REPUTATION_PRESETS[document.getElementById("cheffeniaReputationPreset").value] || 0;
+          const casBonus = CAS_REPUTATION_PRESETS[document.getElementById("casReputationPreset").value] || 0;
+          const domainBonus = Number(document.getElementById("domainCollectPreset").value) || 0;
+          const guildBonus = GUILD_RANKING_PRESETS[document.getElementById("guildRankingPreset").value] || 0;
+          const categBonus = CATEG_RANKING_PRESETS[document.getElementById("categRankingPreset").value] || 0;
+          const trialBonus = TRIAL_RANKING_PRESETS[document.getElementById("trialRankingPreset").value] || 0;
+          const runasBonus = RUNAS_PRESETS[document.getElementById("runasPreset").value] || 0;
+          const rebornCBonus = REBORNC_PRESETS[document.getElementById("rebornCPreset").value] || 0;
+          const sealedBonus = SEA_REPUTATION_PRESETS[document.getElementById("sealedReputationPreset").value] || 0;
+          const tempBonus = TEMP_PRESETS[document.getElementById("temporadaPreset").value] || 0;
+
+          // monta payload
+          const payload = {
+            item_id: itemId,
+            general_mods: {
+              server_rate: rateBonus,
+              vip_total: vipBonus,
+              pet_bonus: petBonus,
+              bio_reputation: bioBonus,
+              cheffenia_reputation: chefBonus,
+              domain_collect: domainBonus,
+              sealed_bonus: sealedBonus,
+              temp_bonus: tempBonus,
+              profs: 0
+            },
+            final_mods: {
+              pet_equip_final: accBonus,
+              quest_final: questBonus,
+              adv_mastery_percent: ADV_MASTER_MAP[advMastery] || 0,
+              birth_mastery_percent: BIRTH_MASTER_MAP[birthMastery] || 0,
+              reborn_mastery_percent: REBORN_KAFRA_MAP[rebornMastery] || 0,
+              cas_rep_final: casBonus,
+              guild_final: guildBonus,
+              categ_final: categBonus,
+              trial_final: trialBonus,
+              runas_final: runasBonus,
+              rebornC_final: rebornCBonus,
+            },
+            consumables: Object.keys(consumables).filter(k => consumables[k]),
+            num_kills: Number(numKills),
+            mc_simulations: Number(mc)
+          };
+
+          console.log("Payload CALC:", payload);
+
+          const res = await fetch(API_BASE + "/drop/calculate", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          setCalcResult(data);
+          setSimResult(null);
+        }
+
+        async function handleSim(){
+          const rateBonus = RATE_PRESETS[document.getElementById("ratePreset").value] || 0;
+          const vipBonus = VIP_PRESETS[document.getElementById("vipPreset").value] || 0;
+          const petBonus = PET_PRESETS[document.getElementById("petPreset").value] || 0;
+          const accBonus = Number(document.getElementById("petAccessoryPreset").value) || 0;
+          const questBonus = FENDA_QUEST_PRESETS[document.getElementById("questPreset").value] || 0;
+          const bioBonus = BIO_REPUTATION_PRESETS[document.getElementById("bioReputationPreset").value] || 0;
+          const chefBonus = BIO_REPUTATION_PRESETS[document.getElementById("cheffeniaReputationPreset").value] || 0;
+          const casBonus = CAS_REPUTATION_PRESETS[document.getElementById("casReputationPreset").value] || 0;
+          const domainBonus = Number(document.getElementById("domainCollectPreset").value) || 0;
+          const guildBonus = GUILD_RANKING_PRESETS[document.getElementById("guildRankingPreset").value] || 0;
+          const categBonus = CATEG_RANKING_PRESETS[document.getElementById("categRankingPreset").value] || 0;
+          const trialBonus = TRIAL_RANKING_PRESETS[document.getElementById("trialRankingPreset").value] || 0;
+          const runasBonus = RUNAS_PRESETS[document.getElementById("runasPreset").value] || 0;
+          const rebornCBonus = REBORNC_PRESETS[document.getElementById("rebornCPreset").value] || 0;
+          const sealedBonus = SEA_REPUTATION_PRESETS[document.getElementById("sealedReputationPreset").value] || 0;
+          const tempBonus = TEMP_PRESETS[document.getElementById("temporadaPreset").value] || 0;
+
+          const payload = {
+            item_id: itemId,
+            general_mods: {
+              server_rate: rateBonus,
+              vip_total: vipBonus,
+              pet_bonus: petBonus,
+              bio_reputation: bioBonus,
+              cheffenia_reputation: chefBonus,
+              domain_collect: domainBonus,
+              sealed_bonus: sealedBonus,
+              temp_bonus: tempBonus,
+              profs: 0
+            },
+            final_mods: {
+              pet_equip_final: accBonus,
+              quest_final: questBonus,
+              adv_mastery_percent: ADV_MASTER_MAP[advMastery] || 0,
+              birth_mastery_percent: BIRTH_MASTER_MAP[birthMastery] || 0,
+              reborn_mastery_percent: REBORN_KAFRA_MAP[rebornMastery] || 0,
+              cas_rep_final: casBonus,
+              guild_final: guildBonus,
+              categ_final: categBonus,
+              trial_final: trialBonus,
+              runas_final: runasBonus,
+              rebornC_final: rebornCBonus,
+              
+            },
+            consumables: Object.keys(consumables).filter(k => consumables[k]),
+            num_kills: Number(numKills),
+            mc_simulations: Number(mc)
+          };
+
+          console.log("Payload SIM:", payload);
+
+          const res = await fetch(API_BASE + "/drop/simulate", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          setSimResult(data);
+        }
+        {/* TABELA CALC */}
+        function CalcTable({ data }) {
+          if (!data) return null;
+
+          const rows = [
+            ["Florzinha (%)", data.drop_florzinha_percent],
+            ["Chance Final (%)", data.p_final_percent], 
+            ["Drop base (%)", data.p_base_percent],
+            ["Bônus Geral (%)", data.B_general_percent],
+            ["Bônus Final (%)", data.B_final_percent],
+            ["Drop Intermediário (%)", data.p_inter_percent],           
+            ["Prob. ≥ 1 drop em N kills", data.prob_at_least_one_in_N],
+            ["Drops esperados", data.expected_drops_in_N],
+            ["Média de kills p/ 1 drop", data.mean_kills_for_one],
+            ["Mediana 50% (kills)", data.median_kills_for_50pct],
+          ];
+
+          return (
+            <table style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              marginTop: "20px"
+            }}>
+              <thead>
+                <tr style={{ background: "#e5e7eb" }}>
+                  <th style={{ padding: "8px", textAlign: "left" }}>Descrição</th>
+                  <th style={{ padding: "8px", textAlign: "right" }}>Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map(([label, value]) => (
+                  <tr key={label}>
+                    <td style={{
+                      padding: "8px",
+                      borderBottom: "1px solid #ddd"
+                    }}>{label}</td>
+                    <td style={{
+                      padding: "8px",
+                      borderBottom: "1px solid #ddd",
+                      textAlign: "right"
+                    }}>
+                      {typeof value === "number" ? value.toFixed(4) : value}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          );
+        }
+
+        {/* TABELA SIM */}
+        function SimTable({ data }) {
+          if (!data) return null;
+
+          const rows = [
+            ["Simulações", data.simulations],
+            ["Média (kills)", data.avg_kills],
+            ["Mediana (kills)", data.median_kills],
+            ["P10", data.p10],
+            ["P25", data.p25],
+            ["P75", data.p75],
+            ["P90", data.p90],
+          ];
+
+          return (
+            <table style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              marginTop: "20px"
+            }}>
+              <thead>
+                <tr style={{ background: "#e5e7eb" }}>
+                  <th style={{ padding: "8px", textAlign: "left" }}>Estatística</th>
+                  <th style={{ padding: "8px", textAlign: "right" }}>Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map(([label, value]) => (
+                  <tr key={label}>
+                    <td style={{
+                      padding: "8px",
+                      borderBottom: "1px solid #ddd"
+                    }}>{label}</td>
+                    <td style={{
+                      padding: "8px",
+                      borderBottom: "1px solid #ddd",
+                      textAlign: "right"
+                    }}>
+                      {typeof value === "number" ? value.toFixed(2) : value}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          );
+        }
+
+        return (
+          <div>
+            <div className="row card">
+              <div>
+                <label>Conteúdo:
+                  <select value={selectedContent} onChange={e=>loadLevels(e.target.value)}>
+                    {contents.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </label> 
+
+                <label>Nível:
+                  <select value={selectedLevel} onChange={e=>setSelectedLevel(e.target.value)}>
+                    {levels.map(l => <option key={l.level_id} value={l.level_id}>{l.name}</option>)}
+                  </select>
+                </label>
+
+                {/*<label>Nº kills:
+                  <input type="number" value={numKills} onChange={e=>setNumKills(e.target.value)} />
+                </label>
+
+                <label>Simulações MC:
+                  <input type="number" value={mc} onChange={e=>setMc(e.target.value)} />
+                </label>
+              </div>
+
+              <div>
+                
+                {/* Tabela de drops para ficar ao lado do content */}
+                {allDropsData && allDropsData.drops && allDropsData.drops.length > 0 && (
+                  <div className="card">
+                    <h3>Drops do Nível {selectedLevel}</h3>
+                    <p>Bônus Geral: {allDropsData.B_general_percent}% | Bônus Final: {allDropsData.B_final_percent}%</p>
+                    <table style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      marginTop: "8px"
+                    }}>
+                      <thead>
+                        <tr style={{ background: "#e5e7eb" }}>
+                          <th style={{ padding: "8px", textAlign: "left" }}>Item</th>
+                          <th style={{ padding: "8px", textAlign: "right" }}>Base (%)</th>
+                          {/*<th style={{ padding: "8px", textAlign: "right" }}>Intermediário (%)</th>*/}
+                          <th style={{ padding: "8px", textAlign: "right" }}>Final (%)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {allDropsData.drops.map((drop) => (
+                          <tr key={drop.item_id}>
+                            <td style={{
+                              padding: "8px",
+                              borderBottom: "1px solid #ddd"
+                            }}>{drop.item_name}</td>
+                            <td style={{
+                              padding: "8px",
+                              borderBottom: "1px solid #ddd",
+                              textAlign: "right"
+                            }}>{drop.base_drop_percent.toFixed(2)}</td>
+                            {/*<td style={{
+                              padding: "8px",
+                              borderBottom: "1px solid #ddd",
+                              textAlign: "right"
+                            }}>{drop.p_inter_percent.toFixed(2)}</td>*/}
+                            <td style={{
+                              padding: "8px",
+                              borderBottom: "1px solid #ddd",
+                              textAlign: "right"
+                            }}>{drop.p_final_percent.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                
+                {/* GERAL */}
+                <div className="card" style={{marginBottom:12}}>
+                  <h3>Geral</h3>
+
+                  <label>Rate do Servidor:
+                    <select id="ratePreset" defaultValue="100">
+                      <option value="100">100x (0%)</option>
+                      <option value="50">50x (+12%)</option>
+                      <option value="25">25x (+25%)</option>
+                      <option value="12">12x (+37%)</option>
+                      <option value="1">1x (+50%)</option>
+                      <option value="1s">1x Temporada (+60%)</option>
+                      <option value="1s260">1x Temporada 260+ (+65%)</option>
+                    </select>
+                  </label>
+
+                  <label>VIP:
+                    <select id="vipPreset" defaultValue="none">
+                      <option value="none">Sem VIP (+0%)</option>
+                      <option value="vip1">VIP 1 (+10%)</option>
+                      <option value="vip12">VIP 1 e 2 (+20%)</option>
+                    </select>
+                  </label>
+
+                  <label>Pet (Drop Geral):
+                    <select id="petPreset" defaultValue="none">
+                      <option value="none">Sem Pet (+0%)</option>
+                      <option value="pet22">Pet 22% (+7%)</option>
+                      <option value="pet45">Pet 45% (+15%)</option>
+                      <option value="pet90">Pet 90% (+30%)</option>
+                      <option value="pet90D">Pet 90% Grade D (+42%)</option>
+                      <option value="pet90C">Pet 90% Grade C (+54%)</option>
+                      <option value="pet90B">Pet 90% Grade B (+78%)</option>
+                      <option value="pet90A">Pet 90% Grade A (+126%)</option>
+                    </select>
+                  </label>
+                </div>
+                
+                {/* CONSUMÍVEIS */}
+                <div className="card" style={{marginBottom:12}}>
+                  <h3>Consumíveis</h3>
+                  {Object.entries(consumablesList).map(([key,label]) => (
+                    <label key={key}>
+                      <input
+                        type="checkbox"
+                        checked={!!consumables[key]}
+                        onChange={() => handleConsumableChange(key)}
+                      />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+  
+                {/* EXTRAS */}
+                <div className="card" style={{marginBottom:12}}>
+                  <h3>Extras</h3>
+
+                  <label>Acessório Pet (Drop Final):
+                    <select id="petAccessoryPreset" defaultValue="0">
+                      {PET_ACCESSORY_PRESETS.map(i => <option key={i} value={i}>{i}</option>)}
+                    </select>
+                  </label>
+
+                  <label>Quest da Fenda (Drop Final):
+                    <select id="questPreset" defaultValue="0">
+                      <option value="0">Nenhuma</option>
+                      <option value="3">Savage (+3%)</option>
+                      <option value="4">Infernal (+4%)</option>
+                      <option value="8">Pesadelo (+8%)</option>
+                      <option value="12">Ultimate (+12%)</option>
+                    </select>
+                  </label>
+
+                    <label>Maestria do Aventureiro (Drop Final):
+                    <select value={advMastery} onChange={e=>setAdvMastery(e.target.value)}>
+                      <option value="none">Nenhuma</option>
+                      <option value="adv_1">Nv.1 (+1%)</option>
+                      <option value="adv_2">Nv.2 (+3%)</option>
+                      <option value="adv_3">Nv.3 (+5%)</option>
+                      <option value="adv_4">Nv.4 (+8%)</option>
+                    </select>
+                    </label>
+                 
+                    <label>Maestria de Aniversário (Drop Final):
+                    <select value={birthMastery} onChange={e=>setBirthMastery(e.target.value)}>
+                      <option value="none">Nenhuma</option>
+                      <option value="birth_1">Nv.1 (+1%)</option>
+                      <option value="birth_2">Nv.2 (+2%)</option>
+                      <option value="birth_3">Nv.3 (+3%)</option>
+                      <option value="birth_4">Nv.4 (+5%)</option>
+                    </select>
+                    </label>
+                </div>
+
+                {/* CONTA */}
+                <div className="card" style={{marginBottom:12}}>
+                  <h3>Conta</h3>
+
+                  <label>Personagens Temporada:
+                    <select id="temporadaPreset" defaultValue="0">
+                      <option value="0">Sem Relíquias (+0%)</option>
+                      <option value="1">5 Relíquias (+2%)</option>
+                      <option value="2">10 Relíquias (+4%)</option>
+                      <option value="3">14 Relíquias (+6%)</option>
+                      <option value="4">18 Relíquias (+8%)</option>                    
+                    </select>
+                  </label>
+
+                  <label>Reputação Bio Extreme:
+                    <select id="bioReputationPreset" defaultValue="0">
+                      <option value="0">Sem bolinhas (+0%)</option>
+                      <option value="1">1 bolinha (+2%)</option>
+                      <option value="2">2 bolinhas (+4%)</option>
+                      <option value="3">3 bolinhas (+6%)</option>
+                      <option value="4">4 bolinhas (+8%)</option>
+                      <option value="5">5 bolinhas (+10%)</option>
+                    </select>
+                  </label>
+
+                  <label>Reputação Cheffenia Extreme:
+                    <select id="cheffeniaReputationPreset" defaultValue="0">
+                      <option value="0">Sem bolinhas (+0%)</option>
+                      <option value="1">1 bolinha (+2%)</option>
+                      <option value="2">2 bolinhas (+4%)</option>
+                      <option value="3">3 bolinhas (+6%)</option>
+                      <option value="4">4 bolinhas (+8%)</option>
+                      <option value="5">5 bolinhas (+10%)</option>
+                    </select>
+                  </label>
+
+                  <label>Reputação Selada:
+                    <select id="sealedReputationPreset" defaultValue="0">
+                      <option value="0">Sem bolinhas (+0%)</option>
+                      <option value="1">1 bolinha (+1%)</option>
+                      <option value="2">2 bolinhas (+2%)</option>
+                      <option value="3">3 bolinhas (+3%)</option>
+                      <option value="4">4 bolinhas (+4%)</option>
+                      <option value="5">5 bolinhas (+5%)</option>
+                    </select>
+                  </label>
+
+                  <label>Coletas do Domínio:
+                    <select id="domainCollectPreset" defaultValue="0">
+                      <option value="0">Nenhuma coleta Nv6 (+0%)</option>
+                      <option value="1">1 coleta Nv6 (+1%)</option>
+                      <option value="2">2 coletas Nv6 (+2%)</option>
+                      <option value="3">3 coletas Nv6 (+3%)</option>
+                    </select>
+                  </label>
+
+                  <label>Casamento (Drop Final):
+                    <select id="casReputationPreset" defaultValue="0">
+                      <option value="0">Sem casar (+0%)</option>
+                      <option value="1">Intimidade -20 (+1%)</option>
+                      <option value="2">Intimidade =20 (+2%)</option>
+                    </select>
+                  </label>
+
+                  <label>Reborn Kafra (Drop Final):
+                    <select value={rebornMastery} onChange={e=>setRebornMastery(e.target.value)}>
+                      <option value="none">Nenhum Reborn (+0%)</option>
+                      <option value="reborn_1">1 reborn  (+1%)</option>
+                      <option value="reborn_2">2 reborns (+2%)</option>
+                      <option value="reborn_3">3 reborns (+3%)</option>
+                      <option value="reborn_4">4 reborns (+5%)</option>
+                      <option value="reborn_5">5 reborns (+8%)</option>
+                    </select>
+                  </label>
+
+                  <label>Runas (Drop Final):
+                    <select id="runasPreset" defaultValue="0">
+                      <option value="0">+0</option>
+                      <option value="1">+5 (+1%)</option>
+                      <option value="2">+10 (+2%)</option>
+                      <option value="3">+15 (+3%)</option>
+                    </select>
+                  </label>
+
+                  <label>Reborn Charge (Drop Final):
+                    <select id="rebornCPreset" defaultValue="0">
+                      <option value="0">Não feito</option>
+                      <option value="1">Feito (+1%)</option>                      
+                      </select>
+                  </label>              
+
+                </div>
+
+                {/* Rankings */}
+                <div className="card" style={{marginBottom:12}}>
+                  <h3>Rankings</h3>
+
+                  <label>Ranking Guild (Drop Final):
+                    <select id="guildRankingPreset" defaultValue="0">
+                      <option value="0">Sem Rank</option>
+                      <option value="1">Top 3 (+1%)</option>
+                      <option value="2">Top 2 (+2%)</option>
+                      <option value="3">Top 1 (+3%)</option>
+                    </select>
+                  </label>
+
+                  <label>Ranking Categoria (Drop Final):
+                    <select id="categRankingPreset" defaultValue="0">
+                      <option value="0">Sem Rank</option>
+                      <option value="1">Rankeado (+3%)</option>
+                    </select>
+                  </label>
+
+                  <label>Ranking Trial (Drop Final):
+                    <select id="trialRankingPreset" defaultValue="0">
+                      <option value="0">Sem Rank</option>
+                      <option value="1">Rankeado (+2%)</option>
+                    </select>
+                  </label>
+                  
+                </div>
+              </div>
+            </div> 
+
+
+            <div className="card">
+              <button className="btn-primary" onClick={handleCalc}>Calcular</button>
+              <button className="btn-success" onClick={handleSim}>Simular MC</button>
+            </div>
+
+            {calcResult && (
+              <div className="card">
+                <h3>Resultado do Cálculo</h3>
+                <CalcTable data={calcResult} />
+              </div>
+            )}
+
+            {simResult && (
+              <div className="card">
+                <h3>Resultado da Simulação</h3>
+                <SimTable data={simResult} />
+              </div>
+            )}
+
+            <div style={{marginTop:20, fontSize:12}}>
+              <strong>Nota:</strong> Rode o backend (FastAPI) em <code>http://localhost:8000</code> antes de usar este front-end.
+            </div>
+          </div>
+        );
+      }
+
+      ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+  </body>
+</html>
