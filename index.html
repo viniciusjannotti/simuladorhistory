@@ -47,6 +47,7 @@
         const [levels, setLevels] = useState([]);
         const [selectedLevel, setSelectedLevel] = useState('18');
         const [allDropsData, setAllDropsData] = useState(null); // Armazena resultado do /calculate-all
+        const [monsterTableData, setMonsterTableData] = useState(null); // Armazena resultado do /calculate-monster-table
 
         // presets / tabelas — DEFINIDAS ANTES DE USAR
         const RATE_PRESETS = {"100":0,"50":12,"25":25,"12":37,"1":50,"1s":60,"1s260":65};
@@ -208,7 +209,77 @@
             .then(res => res.json())
             .then(data => setAllDropsData(data))
             .catch(err => console.error("Erro ao calcular drops:", err));
-         };
+        };
+
+        // Função para carregar drops de monster table
+        const loadMonsterTable = () => {
+          if (!selectedContent || !selectedLevel) return;
+
+          // Primeiro verifica se é monster_table
+          const currentContent = contents.find(c => c.content_id === selectedContent);
+          if (!currentContent || currentContent.type !== 'monster_table') {
+            return;
+          }
+
+          const rateBonus = RATE_PRESETS[document.getElementById("ratePreset").value] || 0;
+          const vipBonus = VIP_PRESETS[document.getElementById("vipPreset").value] || 0;
+          const petBonus = PET_PRESETS[document.getElementById("petPreset").value] || 0;
+          const pkBonus = PK_PRESETS[document.getElementById("pkPreset").value] || 0;
+          const accBonus = Number(document.getElementById("petAccessoryPreset").value) || 0;
+          const questBonus = FENDA_QUEST_PRESETS[document.getElementById("questPreset").value] || 0;
+          const bioBonus = BIO_REPUTATION_PRESETS[document.getElementById("bioReputationPreset").value] || 0;
+          const chefBonus = BIO_REPUTATION_PRESETS[document.getElementById("cheffeniaReputationPreset").value] || 0;
+          const casBonus = CAS_REPUTATION_PRESETS[document.getElementById("casReputationPreset").value] || 0;
+          const domainBonus = Number(document.getElementById("domainCollectPreset").value) || 0;
+          const guildBonus = GUILD_RANKING_PRESETS[document.getElementById("guildRankingPreset").value] || 0;
+          const categBonus = CATEG_RANKING_PRESETS[document.getElementById("categRankingPreset").value] || 0;
+          const trialBonus = TRIAL_RANKING_PRESETS[document.getElementById("trialRankingPreset").value] || 0;
+          const runasBonus = RUNAS_PRESETS[document.getElementById("runasPreset").value] || 0;
+          const rebornCBonus = REBORNC_PRESETS[document.getElementById("rebornCPreset").value] || 0;
+          const sealedBonus = SEA_REPUTATION_PRESETS[document.getElementById("sealedReputationPreset").value] || 0;
+          const tempBonus = TEMP_PRESETS[document.getElementById("temporadaPreset").value] || 0;
+
+          const payload = {
+            content_id: selectedContent,
+            level_id: selectedLevel,
+            general_mods: { 
+              server_rate: rateBonus,
+              vip_total: vipBonus,
+              pet_bonus: petBonus,
+              pk_bonus: pkBonus,
+              bio_reputation: bioBonus,
+              cheffenia_reputation: chefBonus,
+              domain_collect: domainBonus,
+              sealed_bonus: sealedBonus,
+              temp_bonus: tempBonus,
+              profs: 0
+             },
+
+            final_mods: {
+              pet_equip_final: accBonus,
+              quest_final: questBonus,
+              adv_mastery_percent: ADV_MASTER_MAP[advMastery] || 0,
+              birth_mastery_percent: BIRTH_MASTER_MAP[birthMastery] || 0,
+              reborn_mastery_percent: REBORN_KAFRA_MAP[rebornMastery] || 0,
+              cas_rep_final: casBonus,
+              guild_final: guildBonus,
+              categ_final: categBonus,
+              trial_final: trialBonus,
+              runas_final: runasBonus,
+              rebornC_final: rebornCBonus,
+             },
+            consumables: Object.keys(consumables).filter(k => consumables[k])
+          };
+
+          fetch(API_BASE + "/drop/calculate-monster-table", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify(payload)
+          })
+            .then(res => res.json())
+            .then(data => setMonsterTableData(data))
+            .catch(err => console.error("Erro ao calcular monster table:", err));
+        };
 
         // Recalcula quando level muda
         useEffect(() => {
@@ -362,6 +433,74 @@
             ["Mediana 50% (kills)", data.median_kills_for_50pct],
           ];
 
+          function MonsterTable({ data }) {
+          if (!data || !data.monsters || !data.drops) return null;
+
+          return (
+            <div className="card" style={{overflowX: 'auto'}}>
+              <h3>Drops - {data.content_id}</h3>
+              <p>Bônus Geral: {data.B_general_percent}% | Bônus Final: {data.B_final_percent}%</p>
+              
+              <table style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                marginTop: "8px",
+                minWidth: "800px"
+              }}>
+                <thead>
+                  <tr style={{ background: "#e5e7eb" }}>
+                    <th style={{ padding: "8px", textAlign: "left", position: "sticky", left: 0, background: "#e5e7eb" }}>
+                      Item
+                    </th>
+                    {data.monsters.map(monster => (
+                      <th key={monster.monster_id} style={{ padding: "8px", textAlign: "center" }}>
+                        {monster.name}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.drops.map((drop) => (
+                    <tr key={drop.item_id}>
+                      <td style={{
+                        padding: "8px",
+                        borderBottom: "1px solid #ddd",
+                        fontWeight: "500",
+                        position: "sticky",
+                        left: 0,
+                        background: "#fff"
+                      }}>
+                        {drop.item_name}
+                      </td>
+                      {data.monsters.map(monster => {
+                        const rate = drop.calculated_rates[monster.monster_id];
+                        return (
+                          <td key={monster.monster_id} style={{
+                            padding: "8px",
+                            borderBottom: "1px solid #ddd",
+                            textAlign: "center"
+                          }}>
+                            {rate ? (
+                              <div>
+                                <div style={{fontSize: "14px", fontWeight: "bold"}}>
+                                  {rate.final.toFixed(2)}%
+                                </div>
+                                <div style={{fontSize: "11px", color: "#666"}}>
+                                  (base: {rate.base.toFixed(2)}%)
+                                </div>
+                              </div>
+                            ) : '-'}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        }
+
           return (
             <table style={{
               width: "100%",
@@ -470,7 +609,7 @@
               <div>
                 
                 {/* Tabela de drops para ficar ao lado do content */}
-                {allDropsData && allDropsData.drops && allDropsData.drops.length > 0 && (
+                {allDropsData && !monsterTableData && (
                   <div className="card">
                     <h3>Drops do Nível {selectedLevel}</h3>
                     <p>Bônus Geral: {allDropsData.B_general_percent}% | Bônus Final: {allDropsData.B_final_percent}%</p>
@@ -514,6 +653,10 @@
                       </tbody>
                     </table>
                   </div>
+                )}
+                
+                {monsterTableData && (
+                  <MonsterTable data={monsterTableData} />
                 )}
 
                 
