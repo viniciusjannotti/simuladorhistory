@@ -548,19 +548,132 @@
                   </label>
                 </div>
                 
-                {/* CONSUMÍVEIS */}
+                {/* CONSUMÍVEIS - VERSÃO MELHORADA */}
                 <div className="card" style={{marginBottom:12}}>
                   <h3>Consumíveis</h3>
-                  {Object.entries(consumablesList).map(([key,label]) => (
-                    <label key={key}>
-                      <input
-                        type="checkbox"
-                        checked={!!consumables[key]}
-                        onChange={() => handleConsumableChange(key)}
-                      />
-                      {label}
-                    </label>
-                  ))}
+                  
+                  {/* Principais */}
+                  <div style={{marginBottom: '16px', paddingBottom: '8px', borderBottom: '1px solid #e5e7eb'}}>
+                    <div style={{fontWeight: 'bold', color: '#374151', marginBottom: '8px', fontSize: '14px'}}>
+                      PRINCIPAIS (maior bônus vence)
+                    </div>
+                    {[
+                      ['calice', "Cálice (+265%)"],
+                      ['calice2', "Cálice II (+240%)"],
+                      ['chicle', "Chicle de Bola / Manual (+200%)"],
+                      ['chiclete', "Chiclete (+100%)"]
+                    ].map(([key, label], idx) => (
+                      <div 
+                        key={key}
+                        onClick={() => handleConsumableChange(key)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          padding: '10px 12px',
+                          margin: '2px 0',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          backgroundColor: idx % 2 === 0 ? '#f9fafb' : '#ffffff',
+                          borderLeft: consumables[key] ? '3px solid #3b82f6' : 'none',
+                          paddingLeft: consumables[key] ? '9px' : '12px',
+                          ...(consumables[key] && {backgroundColor: '#dbeafe'})
+                        }}
+                        onMouseEnter={(e) => !consumables[key] && (e.currentTarget.style.backgroundColor = '#e0f2fe')}
+                        onMouseLeave={(e) => !consumables[key] && (e.currentTarget.style.backgroundColor = idx % 2 === 0 ? '#f9fafb' : '#ffffff')}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={!!consumables[key]}
+                          onChange={() => handleConsumableChange(key)}
+                          style={{width: '18px', height: '18px', marginRight: '12px', cursor: 'pointer'}}
+                        />
+                        <label style={{margin: 0, cursor: 'pointer', flexGrow: 1}}>{label}</label>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Gerais */}
+                  <div style={{marginBottom: '16px', paddingBottom: '8px', borderBottom: '1px solid #e5e7eb'}}>
+                    <div style={{fontWeight: 'bold', color: '#374151', marginBottom: '8px', fontSize: '14px'}}>
+                      GERAIS (podem somar)
+                    </div>
+                    {[
+                      ['lata', "Lata para Gatos (+20%)"],
+                      ['revitalizadora', "Poção Revitalizadora (+20%)"],
+                      ['drop_pot', "Drop em Pote (+25%)"],
+                      ['fusion', "Fusão em Pote (+25%)"],
+                      ['doador', "Poção do Doador (+35%)"],
+                      ['doador_rmt', "Poção do Doador RMT (+35%)"]
+                    ].map(([key, label], idx) => (
+                      <div 
+                        key={key}
+                        onClick={() => handleConsumableChange(key)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          padding: '10px 12px',
+                          margin: '2px 0',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          backgroundColor: idx % 2 === 0 ? '#f9fafb' : '#ffffff',
+                          borderLeft: consumables[key] ? '3px solid #3b82f6' : 'none',
+                          paddingLeft: consumables[key] ? '9px' : '12px',
+                          ...(consumables[key] && {backgroundColor: '#dbeafe'})
+                        }}
+                        onMouseEnter={(e) => !consumables[key] && (e.currentTarget.style.backgroundColor = '#e0f2fe')}
+                        onMouseLeave={(e) => !consumables[key] && (e.currentTarget.style.backgroundColor = idx % 2 === 0 ? '#f9fafb' : '#ffffff')}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={!!consumables[key]}
+                          onChange={() => handleConsumableChange(key)}
+                          style={{width: '18px', height: '18px', marginRight: '12px', cursor: 'pointer'}}
+                        />
+                        <label style={{margin: 0, cursor: 'pointer', flexGrow: 1}}>{label}</label>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Finais */}
+                  <div>
+                    <div style={{fontWeight: 'bold', color: '#374151', marginBottom: '8px', fontSize: '14px'}}>
+                      BÔNUS FINAL (multiplicativo)
+                    </div>
+                    {[
+                      ['carnavalesco', "Elixir Carnavalesco (+2% Final)"],
+                      ['black', "Black Candy (+6% Final)"],
+                      ['champs', "Pergaminho dos Campeões (+6% Final)"],
+                      ['ativador', "Ativador Universal (+5% Final)"],
+                      ['amantes', "Carta dos Amantes (+4% Final)"]
+                    ].map(([key, label], idx) => (
+                      <div 
+                        key={key}
+                        onClick={() => handleConsumableChange(key)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          padding: '10px 12px',
+                          margin: '2px 0',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          backgroundColor: idx % 2 === 0 ? '#f9fafb' : '#ffffff',
+                          borderLeft: consumables[key] ? '3px solid #3b82f6' : 'none',
+                          paddingLeft: consumables[key] ? '9px' : '12px',
+                          ...(consumables[key] && {backgroundColor: '#dbeafe'})
+                        }}
+                        onMouseEnter={(e) => !consumables[key] && (e.currentTarget.style.backgroundColor = '#e0f2fe')}
+                        onMouseLeave={(e) => !consumables[key] && (e.currentTarget.style.backgroundColor = idx % 2 === 0 ? '#f9fafb' : '#ffffff')}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={!!consumables[key]}
+                          onChange={() => handleConsumableChange(key)}
+                          style={{width: '18px', height: '18px', marginRight: '12px', cursor: 'pointer'}}
+                        />
+                        <label style={{margin: 0, cursor: 'pointer', flexGrow: 1}}>{label}</label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
   
                 {/* EXTRAS */}
