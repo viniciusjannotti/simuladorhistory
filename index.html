@@ -52,6 +52,7 @@
         const RATE_PRESETS = {"100":0,"50":12,"25":25,"12":37,"1":50,"1s":60,"1s260":65};
         const VIP_PRESETS = {"none":0,"vip1":10,"vip12":20};
         const PET_PRESETS = {"none":0,"pet22":7,"pet45":15,"pet90":30,"pet90D":42,"pet90C":54,"pet90B":78,"pet90A":126};
+        const PK_PRESETS = {"0":0,"1":25};
         const PET_ACCESSORY_PRESETS = Array.from({length:21}, (_,i)=>i);
         const FENDA_QUEST_PRESETS = {"0":0,"3":3,"4":4,"8":8,"12":12};
         const BIO_REPUTATION_PRESETS = {"0":0,"1":2,"2":4,"3":6,"4":8,"5":10};
@@ -153,6 +154,7 @@
           const rateBonus = RATE_PRESETS[document.getElementById("ratePreset").value] || 0;
           const vipBonus = VIP_PRESETS[document.getElementById("vipPreset").value] || 0;
           const petBonus = PET_PRESETS[document.getElementById("petPreset").value] || 0;
+          const pkBonus = PK_PRESETS[document.getElementById("pkPreset").value] || 0;
           const accBonus = Number(document.getElementById("petAccessoryPreset").value) || 0;
           const questBonus = FENDA_QUEST_PRESETS[document.getElementById("questPreset").value] || 0;
           const bioBonus = BIO_REPUTATION_PRESETS[document.getElementById("bioReputationPreset").value] || 0;
@@ -174,6 +176,7 @@
               server_rate: rateBonus,
               vip_total: vipBonus,
               pet_bonus: petBonus,
+              pk_bonus: pkBonus,
               bio_reputation: bioBonus,
               cheffenia_reputation: chefBonus,
               domain_collect: domainBonus,
@@ -220,6 +223,7 @@
           const rateBonus = RATE_PRESETS[document.getElementById("ratePreset").value] || 0;
           const vipBonus = VIP_PRESETS[document.getElementById("vipPreset").value] || 0;
           const petBonus = PET_PRESETS[document.getElementById("petPreset").value] || 0;
+          const pkBonus = PK_PRESETS[document.getElementById("pkPreset").value] || 0;
           const accBonus = Number(document.getElementById("petAccessoryPreset").value) || 0;
           const questBonus = FENDA_QUEST_PRESETS[document.getElementById("questPreset").value] || 0;
           const bioBonus = BIO_REPUTATION_PRESETS[document.getElementById("bioReputationPreset").value] || 0;
@@ -241,6 +245,7 @@
               server_rate: rateBonus,
               vip_total: vipBonus,
               pet_bonus: petBonus,
+              pk_bonus: pkBonus,
               bio_reputation: bioBonus,
               cheffenia_reputation: chefBonus,
               domain_collect: domainBonus,
@@ -282,6 +287,7 @@
           const rateBonus = RATE_PRESETS[document.getElementById("ratePreset").value] || 0;
           const vipBonus = VIP_PRESETS[document.getElementById("vipPreset").value] || 0;
           const petBonus = PET_PRESETS[document.getElementById("petPreset").value] || 0;
+          const pkBonus = PK_PRESETS[document.getElementById("pkPreset").value] || 0;
           const accBonus = Number(document.getElementById("petAccessoryPreset").value) || 0;
           const questBonus = FENDA_QUEST_PRESETS[document.getElementById("questPreset").value] || 0;
           const bioBonus = BIO_REPUTATION_PRESETS[document.getElementById("bioReputationPreset").value] || 0;
@@ -302,6 +308,7 @@
               server_rate: rateBonus,
               vip_total: vipBonus,
               pet_bonus: petBonus,
+              pk_bonus: pkBonus,
               bio_reputation: bioBonus,
               cheffenia_reputation: chefBonus,
               domain_collect: domainBonus,
@@ -534,7 +541,7 @@
                     </select>
                   </label>
 
-                  <label>Pet (Drop Geral):
+                  <label>Pet:
                     <select id="petPreset" defaultValue="none">
                       <option value="none">Sem Pet (+0%)</option>
                       <option value="pet22">Pet 22% (+7%)</option>
@@ -546,9 +553,16 @@
                       <option value="pet90A">Pet 90% Grade A (+126%)</option>
                     </select>
                   </label>
+
+                  <label>PK (CHECAR O CONTEÚDO):
+                    <select id="pkPreset" defaultValue="0">
+                      <option value="0">Off (0%)</option>
+                      <option value="1">On (+25%)</option>
+                    </select>
+                  </label>          
                 </div>
-                
-                {/* CONSUMÍVEIS - VERSÃO MELHORADA */}
+
+                {/* CONSUMÍVEIS*/}
                 <div className="card" style={{marginBottom:12}}>
                   <h3>Consumíveis</h3>
                   
