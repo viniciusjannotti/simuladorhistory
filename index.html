@@ -283,8 +283,35 @@
 
         // Recalcula quando level muda
         useEffect(() => {
-          recalculateDrops();
-        }, [selectedLevel, selectedContent]);
+          if (!selectedContent || !selectedLevel) return;
+          
+          // Busca o conteúdo atual para verificar o tipo
+          const currentContent = contents.find(c => c.content_id === selectedContent);
+          
+          if (currentContent && currentContent.type === 'monster_table') {
+            // Limpa a tabela normal e carrega a tabela de monstros
+            setAllDropsData(null);
+            loadMonsterTable();
+          } else {
+            // Limpa a tabela de monstros e carrega a tabela normal
+            setMonsterTableData(null);
+            recalculateDrops();
+          }
+        }, [selectedLevel, selectedContent, consumables, advMastery, birthMastery, rebornMastery]);
+
+        // Recalcula quando consumíveis ou maestrias mudam
+        useEffect(() => {
+          if (!selectedContent || !selectedLevel) return;
+          
+          const currentContent = contents.find(c => c.content_id === selectedContent);
+          
+          if (currentContent && currentContent.type === 'monster_table') {
+            loadMonsterTable();
+          } else {
+            recalculateDrops();
+          }
+        }, [consumables, advMastery, birthMastery, rebornMastery]);
+
 
         function handleConsumableChange(key) {
           setConsumables(prev => ({ ...prev, [key]: !prev[key] }));
@@ -416,24 +443,9 @@
           const data = await res.json();
           setSimResult(data);
         }
-        {/* TABELA CALC */}
-        function CalcTable({ data }) {
-          if (!data) return null;
 
-          const rows = [
-            ["Florzinha (%)", data.drop_florzinha_percent],
-            ["Chance Final (%)", data.p_final_percent], 
-            ["Drop base (%)", data.p_base_percent],
-            ["Bônus Geral (%)", data.B_general_percent],
-            ["Bônus Final (%)", data.B_final_percent],
-            ["Drop Intermediário (%)", data.p_inter_percent],           
-            ["Prob. ≥ 1 drop em N kills", data.prob_at_least_one_in_N],
-            ["Drops esperados", data.expected_drops_in_N],
-            ["Média de kills p/ 1 drop", data.mean_kills_for_one],
-            ["Mediana 50% (kills)", data.median_kills_for_50pct],
-          ];
-
-          function MonsterTable({ data }) {
+        {/* TABELA MONSTER TABLE */}
+        function MonsterTable({ data }) {
           if (!data || !data.monsters || !data.drops) return null;
 
           return (
@@ -501,6 +513,24 @@
           );
         }
 
+
+        {/* TABELA CALC */}
+        function CalcTable({ data }) {
+          if (!data) return null;
+
+          const rows = [
+            ["Florzinha (%)", data.drop_florzinha_percent],
+            ["Chance Final (%)", data.p_final_percent], 
+            ["Drop base (%)", data.p_base_percent],
+            ["Bônus Geral (%)", data.B_general_percent],
+            ["Bônus Final (%)", data.B_final_percent],
+            ["Drop Intermediário (%)", data.p_inter_percent],           
+            ["Prob. ≥ 1 drop em N kills", data.prob_at_least_one_in_N],
+            ["Drops esperados", data.expected_drops_in_N],
+            ["Média de kills p/ 1 drop", data.mean_kills_for_one],
+            ["Mediana 50% (kills)", data.median_kills_for_50pct],
+          ];
+        
           return (
             <table style={{
               width: "100%",
@@ -654,7 +684,7 @@
                     </table>
                   </div>
                 )}
-                
+
                 {monsterTableData && (
                   <MonsterTable data={monsterTableData} />
                 )}
