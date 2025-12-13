@@ -617,7 +617,7 @@
               <div>
                 <label>Conteúdo:
                   <select value={selectedContent} onChange={e=>loadLevels(e.target.value)}>
-                    {contents.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    {contents.map(c => <option key={c.content_id} value={c.content_id}>{c.name}</option>)}
                   </select>
                 </label> 
 
