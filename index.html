@@ -184,6 +184,10 @@
         const [allDropsData, setAllDropsData] = useState(null); // Armazena resultado do /calculate-all
         const [monsterTableData, setMonsterTableData] = useState(null); // Armazena resultado do /calculate-monster-table
 
+        // Controle da Florzinha
+        const [florzinhaMode, setFlorzinhaMode] = useState('auto'); // 'auto' ou 'manual'
+        const [florzinhaValue, setFlorzinhaValue] = useState(''); // valor digitado
+
         // presets / tabelas — DEFINIDAS ANTES DE USAR
         const RATE_PRESETS = {"100":0,"50":12,"25":25,"12":37,"1":50,"1s":60,"1s260":65};
         const VIP_PRESETS = {"none":0,"vip1":10,"vip12":20};
