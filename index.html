@@ -187,7 +187,7 @@
         // presets / tabelas — DEFINIDAS ANTES DE USAR
         const RATE_PRESETS = {"100":0,"50":12,"25":25,"12":37,"1":50,"1s":60,"1s260":65};
         const VIP_PRESETS = {"none":0,"vip1":10,"vip12":20};
-        const PET_PRESETS = {"none":0,"pet22":7,"pet45":15,"pet90":30,"pet90D":42,"pet90C":54,"pet90B":78,"pet90A":126,"pet90AF":168, "pet90RF":200};
+        const PET_PRESETS = {"none":0,"pet22":7,"pet45":15,"pet90":30,"pet90D":42,"pet90C":54,"pet90B":78,"pet90A":126, "pet90R":150, "pet90AF":168, "pet90RF":200};
         const PK_PRESETS = {"0":0,"1":0};
         const MEMBER_PRESETS = {"0":0,"1":50};
         const PET_ACCESSORY_PRESETS = {"0":0,"1":1,"2":2,"3":3,"4":4,"5":5,"6":6,"7":7,"8":8, "9":9, "10":10, "11":11, "12":12, "13":13, "14":14, "15":15, "16":16, "17":17, "18":18, "19":19, "20":20, "21": 21};
@@ -199,6 +199,7 @@
         const CATEG_RANKING_PRESETS = {"0":0,"1":3};
         const TRIAL_RANKING_PRESETS = {"0":0,"1":2};
         const RUNAS_PRESETS = {"0":0,"1":1,"2":2,"3":3};
+        const RUNAS_BLACK_PRESETS = {"0":0,"1":1,"2":1,"3":2};
         const REBORNC_PRESETS = {"0":0,"1":2};
         const SEA_REPUTATION_PRESETS = {"0":0,"1":1,"2":2,"3":3,"4":4,"5":5};
         const TEMP_PRESETS = {"0":0,"1":2,"2":4,"3":6,"4":8};
@@ -305,6 +306,7 @@
           const categBonus = CATEG_RANKING_PRESETS[document.getElementById("categRankingPreset").value] || 0;
           const trialBonus = TRIAL_RANKING_PRESETS[document.getElementById("trialRankingPreset").value] || 0;
           const runasBonus = RUNAS_PRESETS[document.getElementById("runasPreset").value] || 0;
+          const runasblackBonus = RUNAS_BLACK_PRESETS[document.getElementById("runasBlackFridayPreset").value] || 0;
           const rebornCBonus = REBORNC_PRESETS[document.getElementById("rebornCPreset").value] || 0;
           const sealedBonus = SEA_REPUTATION_PRESETS[document.getElementById("sealedReputationPreset").value] || 0;
           const tempBonus = TEMP_PRESETS[document.getElementById("temporadaPreset").value] || 0;
@@ -337,6 +339,7 @@
               categ_final: categBonus,
               trial_final: trialBonus,
               runas_final: runasBonus,
+              runas_black_final: runasblackBonus,
               rebornC_final: rebornCBonus,
             },
             consumables: Object.keys(consumables).filter(k => consumables[k])
@@ -378,6 +381,7 @@
           const categBonus = CATEG_RANKING_PRESETS[document.getElementById("categRankingPreset").value] || 0;
           const trialBonus = TRIAL_RANKING_PRESETS[document.getElementById("trialRankingPreset").value] || 0;
           const runasBonus = RUNAS_PRESETS[document.getElementById("runasPreset").value] || 0;
+          const runasblackBonus = RUNAS_BLACK_PRESETS[document.getElementById("runasBlackFridayPreset").value] || 0;
           const rebornCBonus = REBORNC_PRESETS[document.getElementById("rebornCPreset").value] || 0;
           const sealedBonus = SEA_REPUTATION_PRESETS[document.getElementById("sealedReputationPreset").value] || 0;
           const tempBonus = TEMP_PRESETS[document.getElementById("temporadaPreset").value] || 0;
@@ -411,6 +415,7 @@
               categ_final: categBonus,
               trial_final: trialBonus,
               runas_final: runasBonus,
+              runas_black_final: runasblackBonus,
               rebornC_final: rebornCBonus,
              },
             consumables: Object.keys(consumables).filter(k => consumables[k])
@@ -479,6 +484,7 @@
           const categBonus = CATEG_RANKING_PRESETS[document.getElementById("categRankingPreset").value] || 0;
           const trialBonus = TRIAL_RANKING_PRESETS[document.getElementById("trialRankingPreset").value] || 0;
           const runasBonus = RUNAS_PRESETS[document.getElementById("runasPreset").value] || 0;
+          const runasblackBonus = RUNAS_BLACK_PRESETS[document.getElementById("runasBlackFridayPreset").value] || 0;
           const rebornCBonus = REBORNC_PRESETS[document.getElementById("rebornCPreset").value] || 0;
           const sealedBonus = SEA_REPUTATION_PRESETS[document.getElementById("sealedReputationPreset").value] || 0;
           const tempBonus = TEMP_PRESETS[document.getElementById("temporadaPreset").value] || 0;
@@ -511,6 +517,7 @@
               categ_final: categBonus,
               trial_final: trialBonus,
               runas_final: runasBonus,
+              runas_black_final: runasblackBonus,
               rebornC_final: rebornCBonus,
             },
             consumables: Object.keys(consumables).filter(k => consumables[k]),
@@ -547,6 +554,7 @@
           const categBonus = CATEG_RANKING_PRESETS[document.getElementById("categRankingPreset").value] || 0;
           const trialBonus = TRIAL_RANKING_PRESETS[document.getElementById("trialRankingPreset").value] || 0;
           const runasBonus = RUNAS_PRESETS[document.getElementById("runasPreset").value] || 0;
+          const runasblackBonus = RUNAS_BLACK_PRESETS[document.getElementById("runasBlackFridayPreset").value] || 0;
           const rebornCBonus = REBORNC_PRESETS[document.getElementById("rebornCPreset").value] || 0;
           const sealedBonus = SEA_REPUTATION_PRESETS[document.getElementById("sealedReputationPreset").value] || 0;
           const tempBonus = TEMP_PRESETS[document.getElementById("temporadaPreset").value] || 0;
@@ -578,6 +586,7 @@
               categ_final: categBonus,
               trial_final: trialBonus,
               runas_final: runasBonus,
+              runas_black_final: runasblackBonus,
               rebornC_final: rebornCBonus,
               
             },
@@ -877,6 +886,7 @@
                       <option value="pet90C">Pet 90% Grade C (+54%)</option>
                       <option value="pet90B">Pet 90% Grade B (+78%)</option>
                       <option value="pet90A">Pet 90% Grade A (+126%)</option>
+                      <option value="pet90R">Pet 90% Grade R (+150%)</option>
                       <option value="pet90AF">Pet 90% Grade A + Fantasia (+168%)</option>
                       <option value="pet90RF">Pet 90% Grade R + Fantasia (+200%)</option>
                     </select>
@@ -1168,6 +1178,15 @@
                       <option value="1">+5 (+1%)</option>
                       <option value="2">+10 (+2%)</option>
                       <option value="3">+15 (+3%)</option>
+                    </select>
+                  </label>
+
+                  <label>Runas Black Friday (Drop Final):
+                    <select id="runasBlackFridayPreset" defaultValue="0">
+                      <option value="0">+0</option>
+                      <option value="1">+15 Black Kafra (+1%)</option>
+                      <option value="2">+15 Black Rop's(+1%)</option>
+                      <option value="3">+15 Black Kafra e Black Rops (+2%)</option>
                     </select>
                   </label>
 
